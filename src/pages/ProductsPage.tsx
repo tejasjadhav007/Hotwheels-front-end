@@ -12,6 +12,8 @@ export function ProductsPage({ onNavigate }: ProductsPageProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('featured');
+  const [showInStockOnly, setShowInStockOnly] = useState(false);
+  const [maxPrice, setMaxPrice] = useState(100);
   const [showFilters, setShowFilters] = useState(false);
   const { addToCart } = useCart();
 
@@ -19,7 +21,9 @@ export function ProductsPage({ onNavigate }: ProductsPageProps) {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          product.description.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || product.categoryId === selectedCategory;
-    return matchesSearch && matchesCategory;
+    const matchesStock = !showInStockOnly || product.stock > 0;
+    const matchesPrice = product.price <= maxPrice;
+    return matchesSearch && matchesCategory && matchesStock && matchesPrice;
   });
 
   const sortedProducts = [...filteredProducts].sort((a, b) => {
@@ -40,6 +44,17 @@ export function ProductsPage({ onNavigate }: ProductsPageProps) {
     e.stopPropagation();
     addToCart(product);
   };
+
+  const handleClearFilters = () => {
+    setSearchQuery('');
+    setSelectedCategory('all');
+    setSortBy('featured');
+    setShowInStockOnly(false);
+    setMaxPrice(100);
+  };
+
+  const hasActiveFilters =
+    searchQuery.length > 0 || selectedCategory !== 'all' || showInStockOnly || maxPrice < 100;
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -94,6 +109,16 @@ export function ProductsPage({ onNavigate }: ProductsPageProps) {
                 <option value="price-high">Price: High to Low</option>
                 <option value="name">Name: A-Z</option>
               </select>
+
+              <label className="flex items-center gap-2 px-4 py-3 border-2 border-gray-200 rounded-lg text-gray-700 font-medium whitespace-nowrap">
+                <input
+                  type="checkbox"
+                  checked={showInStockOnly}
+                  onChange={(e) => setShowInStockOnly(e.target.checked)}
+                  className="w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
+                />
+                In stock only
+              </label>
             </div>
           </div>
 
@@ -122,8 +147,44 @@ export function ProductsPage({ onNavigate }: ProductsPageProps) {
                 <option value="price-high">Price: High to Low</option>
                 <option value="name">Name: A-Z</option>
               </select>
+
+              <label className="flex items-center gap-2 px-4 py-3 border-2 border-gray-200 rounded-lg text-gray-700 font-medium">
+                <input
+                  type="checkbox"
+                  checked={showInStockOnly}
+                  onChange={(e) => setShowInStockOnly(e.target.checked)}
+                  className="w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
+                />
+                In stock only
+              </label>
             </div>
           )}
+
+          <div className="mt-6 border-t border-gray-200 pt-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
+              <label htmlFor="max-price" className="font-semibold text-gray-700">
+                Max price: <span className="text-orange-600">${maxPrice.toFixed(2)}</span>
+              </label>
+              {hasActiveFilters && (
+                <button
+                  onClick={handleClearFilters}
+                  className="text-sm text-orange-600 hover:text-orange-700 font-semibold"
+                >
+                  Clear all filters
+                </button>
+              )}
+            </div>
+            <input
+              id="max-price"
+              type="range"
+              min={5}
+              max={100}
+              step={1}
+              value={maxPrice}
+              onChange={(e) => setMaxPrice(Number(e.target.value))}
+              className="w-full accent-orange-600"
+            />
+          </div>
         </div>
 
         <div className="mb-4 text-gray-600">
