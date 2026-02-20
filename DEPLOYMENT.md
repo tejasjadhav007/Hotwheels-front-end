@@ -23,13 +23,21 @@ This guide gives you a **full working production setup** for this project on a L
 - Certbot (Let's Encrypt)
 - (Optional) PostgreSQL 15+ (if you do not want SQLite)
 
-Install base packages:
+Install base packages (Ubuntu/Debian):
 
 ```bash
 sudo apt update
 sudo apt install -y git curl nginx python3 python3-venv python3-pip certbot python3-certbot-nginx
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt install -y nodejs
+```
+
+Install base packages (Rocky/AlmaLinux/RHEL 9):
+
+```bash
+sudo dnf install -y git curl nginx python3 python3-pip python3-virtualenv certbot python3-certbot-nginx
+curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -
+sudo dnf install -y nodejs
 ```
 
 Verify:
@@ -313,3 +321,54 @@ Common issues:
 
 - `try_files $uri /index.html;` missing in nginx root location
 
+
+
+## 11) Fix for common startup error (`could not translate host name`)
+
+If you see:
+
+`could not translate host name "123@172.20.1.138" to address`
+
+Your `.env` is wrong. `DB_HOST` must contain only host/IP.
+
+Use:
+
+```env
+DB_DRIVER=postgresql
+DB_HOST=172.20.1.138
+DB_PORT=5432
+DB_NAME=hotwheels
+DB_USER=123
+DB_PASSWORD=YOUR_PASSWORD
+```
+
+Or set one full string:
+
+```env
+DATABASE_URL=postgresql+psycopg2://123:YOUR_PASSWORD@172.20.1.138:5432/hotwheels
+```
+
+Then restart:
+
+```bash
+sudo systemctl restart hotwheels-backend
+```
+
+
+### `ModuleNotFoundError: No module named `app``
+
+This happens when launching from the repository root with a backend-only module path.
+
+Use one of these:
+
+```bash
+# from repository root
+uvicorn backend.app.main:app --reload --host 0.0.0.0 --port 8000
+
+# or compatibility alias
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# from backend/ directory
+cd backend
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
